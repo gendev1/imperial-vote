@@ -19,7 +19,11 @@ contract CrossChainVoting is IWormholeReceiver {
     // the voting actions taken for each proposal
     mapping(address => mapping(uint256 => Vote)) public votes;
 
-    enum Ballot { YES, NO, MAYBE }
+    enum Ballot {
+        YES,
+        NO,
+        MAYBE
+    }
 
     struct Proposal {
         // description of proposal
@@ -35,6 +39,7 @@ contract CrossChainVoting is IWormholeReceiver {
     }
 
     struct DecodedProposal {
+        uint256 proposalId;
         // description of proposal
         string description;
         // block of the proposal creation
@@ -43,7 +48,6 @@ contract CrossChainVoting is IWormholeReceiver {
         uint128 expiration;
         // result
         bool isAccepted;
-        
     }
 
     struct Vote {
@@ -62,14 +66,13 @@ contract CrossChainVoting is IWormholeReceiver {
         bool isAccepted;
     }
 
-     event Voted(address indexed voter, uint256 indexed proposalId, Vote vote);
-     event ProposalExecuted(uint256 proposalId);
-     event ProposalCreated(
+    event Voted(address indexed voter, uint256 indexed proposalId, Vote vote);
+    event ProposalExecuted(uint256 proposalId);
+    event ProposalCreated(
         uint256 proposalId,
         uint256 created,
         uint256 expiration
     );
-
 
     address public immutable owner;
     address public immutable wormhole;
@@ -80,8 +83,12 @@ contract CrossChainVoting is IWormholeReceiver {
     uint16[] public registeredChains;
     mapping(uint16 => bytes32) public registeredChainToAddress;
 
-
-    constructor(address _wormhole, address _wormholeRelayer, uint16 _chainId, address erc20){
+    constructor(
+        address _wormhole,
+        address _wormholeRelayer,
+        uint16 _chainId,
+        address erc20
+    ) {
         wormhole = _wormhole;
         wormholeRelayer = _wormholeRelayer;
         chainId = _chainId;
@@ -99,95 +106,119 @@ contract CrossChainVoting is IWormholeReceiver {
         uint256 proposalId,
         Ballot ballot,
         uint256 tokenAmount
-    ) public  {
+    ) public {
         // No votes after the vote period is over
         require(proposals[proposalId].created != 0, "proposal does not exist");
         require(block.number <= proposals[proposalId].expiration, "Expired");
 
         uint256 allowance = token.allowance(msg.sender, address(this));
-        require(allowance >= tokenAmount, "Allowance does not meet the token amount");
+        require(
+            allowance >= tokenAmount,
+            "Allowance does not meet the token amount"
+        );
 
         token.transfer(address(this), tokenAmount);
 
-        require(votes[msg.sender][proposalId].votingPower == 0, "Already Voted");
+        require(
+            votes[msg.sender][proposalId].votingPower == 0,
+            "Already Voted"
+        );
 
         votes[msg.sender][proposalId] = Vote(tokenAmount, ballot);
         proposals[proposalId].votingPower[uint256(ballot)] = tokenAmount;
 
         // Emit an event to track this info
         emit Voted(msg.sender, proposalId, votes[msg.sender][proposalId]);
-        
     }
 
     // @notice Close the voting for the given proposal ID
     function closeVoting(uint256 proposalId) internal {
         // We have to execute after min voting period
-        require(block.number >= proposals[proposalId].expiration, "not expired");
-         // If executed the proposal will be deleted and this will be zero
+        require(
+            block.number >= proposals[proposalId].expiration,
+            "not expired"
+        );
+        // If executed the proposal will be deleted and this will be zero
         require(proposals[proposalId].expiration != 0, "Previously executed");
 
-        
-        bool majorityInFavor = proposals[proposalId].votingPower[0] > proposals[proposalId].votingPower[1];
+        bool majorityInFavor = proposals[proposalId].votingPower[0] >
+            proposals[proposalId].votingPower[1];
 
         // Notification of proposal execution
         emit ProposalExecuted(proposalId);
 
         // DO the magic here
 
-            IWormholeRelayer.VaaKey[]
-                memory keys = new IWormholeRelayer.VaaKey[](0);
-            IWormholeRelayer(wormholeRelayer).send{value: 1e17}(
-                // targetChain
-                registeredChains[0],
-                registeredChainToAddress[registeredChains[0]],
-                // refundChain
-                registeredChains[0],
-                // refundAddress
-                registeredChainToAddress[registeredChains[0]],
-                1e17,
-                0,
-                abi.encode(ProposalResult(proposalId, majorityInFavor)),
-                keys,
-                200
-            );
-            
+        IWormholeRelayer.VaaKey[] memory keys = new IWormholeRelayer.VaaKey[](
+            0
+        );
+        IWormholeRelayer(wormholeRelayer).send{value: 1e17}(
+            // targetChain
+            registeredChains[0],
+            registeredChainToAddress[registeredChains[0]],
+            // refundChain
+            registeredChains[0],
+            // refundAddress
+            registeredChainToAddress[registeredChains[0]],
+            1e17,
+            0,
+            abi.encode(ProposalResult(proposalId, majorityInFavor)),
+            keys,
+            200
+        );
+
         // delete proposal for some gas savings,
         // Proposals are only deleted when they are actually executed, failed proposals
         // are never deleted
         delete proposals[proposalId];
-
-        
-
-    } 
-
-    function registerContract(address _addr, uint16 _chainId) external onlyOwner {
-        registeredChains.push(_chainId);
-        registeredChainToAddress[_chainId] = IWormholeRelayer(wormholeRelayer).toWormholeFormat(_addr);
     }
 
-    function receiveWormholeMessages(DeliveryData calldata _deliveryData, bytes[] memory) external payable {
+    function registerContract(
+        address _addr,
+        uint16 _chainId
+    ) external onlyOwner {
+        registeredChains.push(_chainId);
+        registeredChainToAddress[_chainId] = IWormholeRelayer(wormholeRelayer)
+            .toWormholeFormat(_addr);
+    }
+
+    function receiveWormholeMessages(
+        DeliveryData calldata _deliveryData,
+        bytes[] memory
+    ) external payable {
         require(
-            registeredChainToAddress[_deliveryData.sourceChain] == _deliveryData.sourceAddress,
+            registeredChainToAddress[_deliveryData.sourceChain] ==
+                _deliveryData.sourceAddress,
             "Unregistered sending contract"
         );
 
-        Option memory option = abi.decode(_deliveryData.payload[:32], (Option));
+        DecodedProposal memory p = abi.decode(
+            _deliveryData.payload,
+            (DecodedProposal)
+        );
 
-        // create a new proposal
-        if(option.val == 1){
-            DecodedProposal memory p = abi.decode(_deliveryData.payload[32:], (DecodedProposal) );
-            createProposal(p);
-        } 
-        if(option.val == 2){
-           uint256 proposalId = abi.decode(_deliveryData.payload[32:],(uint256));
+        if (p.proposalId == 999) {
+            uint256 proposalId = p.proposalId;
             closeVoting(proposalId);
+        } else {
+            proposals[proposalCount] = Proposal(
+                p.description,
+                // Note we use blocknumber - 1 here as a flash loan mitigation.
+                uint128(block.number - 1),
+                uint128(block.number - p.created + p.expiration),
+                false,
+                [uint256(0), uint256(0), uint256(0)]
+            );
+            emit ProposalCreated(
+                proposalCount,
+                block.number,
+                block.number - p.created + p.expiration
+            );
+            proposalCount += 1;
         }
-
-       
     }
 
-
-    function createProposal(DecodedProposal memory p) internal{
+    function createProposal(DecodedProposal memory p) internal {
         proposals[proposalCount] = Proposal(
             p.description,
             // Note we use blocknumber - 1 here as a flash loan mitigation.
@@ -196,14 +227,12 @@ contract CrossChainVoting is IWormholeReceiver {
             false,
             proposals[proposalCount].votingPower
         );
-         emit ProposalCreated(
+        emit ProposalCreated(
             proposalCount,
             block.number,
             block.number - p.created + p.expiration
-            
         );
         proposalCount += 1;
-        
     }
 
     modifier onlyOwner() {
