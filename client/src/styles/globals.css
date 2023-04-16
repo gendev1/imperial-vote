@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+
+:root {
+    --font-xsm: 16px;
+    --font-sm: 20px;
+    --font-md: 36px;
+    --font-lg: 48px;
+    --font-xl: 60px;
+    --font-xxl: 64px;
+    /* colors */
+    --white: #ffffff;
+    --gold: #dfad3b;
+    --green: #14A0E9;
+    --black: #000000;
+}
+
+:root {
+    --primary-color: #4CBCFB;
+    --primary-text: #0bbdef;
+    --primary-gradient: linear-gradient(140.65deg, #00F0FF -5.1%, #2657D5 110.94%);
+    --sunset-gradient: linear-gradient(180deg, #FF9900 -33.75%, #FF00F5 147.5%);
+}
+
+@media (max-width: 1440.98px) {
+    :root {
+        --font-xsm: 16px;
+        --font-sm: 20px;
+        --font-md: 36px;
+        --font-lg: 48px;
+        --font-xl: 64px;
+        --font-xxl: 52px;
+        --font-xxxl: 96px;
+    }
+}
+
+@media (max-width: 1299.98px) {
+    :root {
+        --font-xsm: 14px;
+        --font-sm: 20px;
+        --font-md: 28px;
+        --font-lg: 43px;
+        --font-xl: 40px;
+        --font-xxl: 57px;
+        --font-xxxl: 75px;
+    }
+}
+
+@media (max-width: 999.98px) {
+    :root {
+        --font-xsm: 13px;
+        --font-sm: 20px;
+        --font-md: 28px;
+        --font-lg: 36px;
+        --font-xl: 40px;
+        --font-xxl: 57px;
+        --font-xxxl: 75px;
+    }
+}
+
+@media (max-width: 768.98px) {
+    :root {
+        --font-xsm: 14px;
+        --font-sm: 20px;
+        --font-md: 18px;
+        --font-lg: 28px;
+        --font-xl: 44px;
+        --font-xxl: 57px;
+        --font-xxxl: 48px;
+    }
+}
+
+@media (max-width: 475.98px) {
+    :root {
+        --font-xsm: 14px;
+        --font-sm: 14px;
+        --font-md: 16px;
+        --font-lg: 25px;
+        --font-xl: 25px;
+        --font-xxl: 35px;
+        --font-xxxl: 39px;
+    }
+}
+
+@media (max-width: 375.98px) {
+    :root {
+        --font-xsm: 14px;
+        --font-sm: 14px;
+        --font-md: 16px;
+        --font-lg: 24px;
+        --font-xl: 25px;
+        --font-xxl: 35px;
+        --font-xxxl: 29px;
+    }
+}
